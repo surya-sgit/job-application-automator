@@ -24,13 +24,14 @@ export async function POST(req: NextRequest) {
   const { analysis, resume, company } = parsed.data;
 
   // Derive top points locally to keep the prompt tiny.
-  const topPoints = [
-    resume.summary,
-    ...(resume.experience[0]?.bullets?.slice(0, 1) || []),
-    ...(resume.projects[0]?.bullets?.slice(0, 1) || []),
-  ]
-    .filter(Boolean)
-    .slice(0, 3);
+  const topPoints: string[] = [];
+  if (resume.summary) topPoints.push(`Professional Summary: ${resume.summary}`);
+  if (resume.experience[0]?.bullets?.[0]) {
+    topPoints.push(`Previous Role (${resume.experience[0].company}): ${resume.experience[0].bullets[0]}`);
+  }
+  if (resume.projects[0]?.bullets?.[0]) {
+    topPoints.push(`Personal Project (${resume.projects[0].title}): ${resume.projects[0].bullets[0]}`);
+  }
 
   try {
     const userId = await requireUserId();
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
         jobTitle: analysis.jobTitle || resume.title,
         company,
         candidateName: resume.name,
+        contact: resume.contact,
         topPoints,
       }),
     });

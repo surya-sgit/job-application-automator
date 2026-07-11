@@ -157,6 +157,7 @@ export type TailoredResume = z.infer<typeof TailoredResumeSchema>;
 /** Output of the JD analyzer agent (agent 1). */
 export const JdAnalysisSchema = z.object({
   jobTitle: z.string().default(""),
+  companyName: z.string().default(""),
   seniority: z.string().default(""),
   hardSkills: z.array(z.string()).default([]),
   softSkills: z.array(z.string()).default([]),

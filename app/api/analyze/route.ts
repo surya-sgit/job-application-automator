@@ -4,7 +4,7 @@ import { getModel, MissingKeyError, describeConfig } from "@/lib/ai";
 import { readSecrets } from "@/lib/store";
 import { requireUserId, UnauthorizedError } from "@/lib/session";
 import { JdAnalysisSchema } from "@/lib/resumeSchema";
-import { ANALYZE_SYSTEM, analyzeUser } from "@/lib/prompts";
+import { ANALYSIS_SYSTEM, analyzeUser } from "@/lib/prompts";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const { object, usage } = await generateObject({
       model: await getModel({ cheap: true, secrets }),
       schema: JdAnalysisSchema,
-      system: ANALYZE_SYSTEM,
+      system: ANALYSIS_SYSTEM,
       prompt: analyzeUser(jd),
     });
     console.log(`[analyze] ${describeConfig(secrets)} tokens=`, usage);

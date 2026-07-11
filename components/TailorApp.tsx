@@ -52,6 +52,7 @@ export default function TailorApp() {
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
+  const [signature, setSignature] = useState("");
   const [emailStage, setEmailStage] = useState<"compose" | "confirm">("compose");
   const [sendResult, setSendResult] = useState("");
 
@@ -94,6 +95,9 @@ export default function TailorApp() {
       setAnalysis(a.analysis);
       if (a.analysis.recruiterEmail) {
         setTo(a.analysis.recruiterEmail);
+      }
+      if (a.analysis.companyName) {
+        setCompany(a.analysis.companyName);
       }
 
       setBusy("Matching your projects (local, 0 tokens)…");
@@ -211,6 +215,18 @@ export default function TailorApp() {
       const d = await post("/api/email/draft", { analysis, resume, company });
       setSubject(d.draft.subject);
       setBody(d.draft.body);
+      if (!signature && resume) {
+        const c = resume.contact || {};
+        let sig = `Best regards,\n${resume.name}`;
+        if (c.email) sig += `\nEmail: ${c.email}`;
+        if (c.phone) sig += `\nPhone: ${c.phone}`;
+        c.links?.forEach((link: string) => {
+          if (link.toLowerCase().includes("linkedin")) sig += `\nLinkedIn: https://${link.replace(/^https?:\/\//, "")}`;
+          else if (link.toLowerCase().includes("github")) sig += `\nGitHub: https://${link.replace(/^https?:\/\//, "")}`;
+          else sig += `\nLink: https://${link.replace(/^https?:\/\//, "")}`;
+        });
+        setSignature(sig);
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -224,7 +240,12 @@ export default function TailorApp() {
     setSendResult("");
     setBusy("Sending…");
     try {
-      await post("/api/email/send", { to, subject, body, resume });
+      await post("/api/email/send", {
+        to,
+        subject,
+        body: signature ? `${body}\n\n${signature}` : body,
+        resume,
+      });
       setSendResult(`✅ Sent to ${to} with your resume attached.`);
     } catch (e) {
       setError((e as Error).message);
@@ -623,9 +644,17 @@ export default function TailorApp() {
                   <div>
                     <label className="label">Body</label>
                     <textarea
-                      className="input min-h-[200px]"
+                      className="input min-h-[150px]"
                       value={body}
                       onChange={(e) => setBody(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Signature</label>
+                    <textarea
+                      className="input min-h-[120px]"
+                      value={signature}
+                      onChange={(e) => setSignature(e.target.value)}
                     />
                   </div>
                   <button

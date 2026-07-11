@@ -6,12 +6,13 @@ import { JdAnalysis, Profile, Project } from "./resumeSchema";
  * experience/skills. This keeps token usage low.
  */
 
-export const ANALYZE_SYSTEM =
-  "You extract structured hiring signals from a job description. " +
-  "Return ONLY the requested fields. Be concise: short skill/keyword tokens, not sentences.";
+export const ANALYSIS_SYSTEM =
+  "You are an expert technical recruiter analyzing a job description. Extract the exact job title, company name, " +
+  "seniority level, hard skills, soft skills, key responsibilities, and key terminology/keywords. " +
+  "Also extract the recruiter's email if present.";
 
 export function analyzeUser(jd: string): string {
-  return `Job description:\n"""\n${jd.slice(0, 3000)}\n"""\n\nExtract the job title, seniority, hard skills, soft skills, ATS keywords, key responsibilities, and recruiterEmail (if any).`;
+  return `Job description:\n"""\n${jd.slice(0, 3000)}\n"""\n\nExtract the job title, company name, seniority, hard skills, soft skills, ATS keywords, key responsibilities, and recruiterEmail (if any).`;
 }
 
 export const RESUME_PARSE_SYSTEM =
@@ -42,7 +43,7 @@ export const TAILOR_SYSTEM =
   "7. Do NOT worry about page length — the rendering system handles fitting to one page automatically. " +
   "8. For skills, organize them into logical categories (e.g. 'Languages: Python, Java', 'Frameworks: React, Node'). DO NOT output the literal word 'Category:'. " +
   "9. If the candidate provides certifications or achievements, include them. " +
-  "10. **BOLD** key skills, metrics, and technologies in the bullet points using markdown (e.g. **React**).";
+  "10. **BOLD** key skills, metrics, and technologies in the bullet points using markdown (e.g. **React**). Do NOT bold entire sentences.";
 
 /** Compact context object sent to the tailor agent (agent 3). */
 export function tailorContext(
@@ -102,22 +103,40 @@ export function tailorContext(
 }
 
 export const EMAIL_SYSTEM =
-  "You write concise, professional job-application emails to a recruiter/HR. " +
-  "3-5 short sentences. Warm but not fluffy. Reference the specific role and 1-2 " +
-  "of the strongest, most relevant qualifications. End with a call to action. " +
-  "Do NOT include placeholders like [Name] — use the provided details or omit.";
+  "Redesign the email template to follow a professional job application format. Do not generate one long paragraph.\n" +
+  "\n" +
+  "Requirements:\n" +
+  "- Add a subject line placeholder: \"Application for [Job Title] – [Candidate Name]\"\n" +
+  "- Begin with \"Dear Hiring Manager,\"\n" +
+  "- Split the email into 3–4 short paragraphs for readability.\n" +
+  "- Mention the specific job title dynamically.\n" +
+  "- Keep the introduction concise (1-2 lines).\n" +
+  "- Keep the tone short and formal. Do not over-explain since the resume is attached.\n" +
+  "- VERY IMPORTANT: The provided points will explicitly state if they are from a 'Previous Role' or a 'Personal Project'. Do NOT refer to a personal project as a 'previous role' or 'job'.\n" +
+  "- Briefly highlight only the most relevant skills based on the provided points.\n" +
+  "- Mention that the resume is attached.\n" +
+  "- End with a professional call to action expressing interest in an interview.\n" +
+  "\n" +
+  "Formatting:\n" +
+  "- Use proper paragraph spacing.\n" +
+  "- Keep the email strictly under 100 words.\n" +
+  "- Do not include a signature block (e.g. 'Best regards, [Name]'). The UI will append it automatically.\n" +
+  "- Make it ATS- and recruiter-friendly.\n" +
+  "- Dynamically personalize the email based on the job title, company name, and relevant resume content instead of using the same generic text for every application.";
 
 export function emailUser(args: {
   jobTitle: string;
   company?: string;
   candidateName: string;
+  contact?: { email?: string; phone?: string; links?: string[] };
   topPoints: string[];
 }): string {
   return `Role: ${args.jobTitle}${args.company ? ` at ${args.company}` : ""}
 Candidate: ${args.candidateName}
+
 Strongest relevant points:\n- ${args.topPoints.join("\n- ")}
 
-Write the email subject and body. The resume will be attached as a PDF, so mention it briefly.`;
+Write the email subject and body now. Ensure the body is short and formal. Do not include a signature block.`;
 }
 
 export const TWEAK_SYSTEM =
