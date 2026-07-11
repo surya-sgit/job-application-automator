@@ -16,7 +16,7 @@ export function analyzeUser(jd: string): string {
 
 export const RESUME_PARSE_SYSTEM =
   "You extract structured profile data from a resume/CV. Return ONLY the requested " +
-  "fields: name, headline, contact info, links, summary, skills, projects, experience, " +
+  "fields: name, headline, contact info, links, summary, skills, certifications, achievements, projects, experience, " +
   "education. Preserve the resume's own wording for bullets. Never invent employers, " +
   "dates, degrees, or accomplishments not in the text. Leave a field empty if absent.";
 
@@ -32,11 +32,16 @@ export const QUESTIONS_SYSTEM =
 
 export const TAILOR_SYSTEM =
   "You are an expert resume writer and ATS optimizer. Rewrite the candidate's " +
-  "material into a tailored, single-page resume for the target job. Rules: " +
-  "use strong action verbs and quantified impact; mirror the JD's keywords " +
-  "naturally; keep bullets to one line each (<= ~110 chars); do NOT invent " +
-  "employers, degrees, or dates; only rephrase/emphasize what is provided plus " +
-  "the user's answers. Keep total content tight enough for one page.";
+  "material into a tailored resume for the target job. CRITICAL RULES: " +
+  "1. PRESERVE ALL bullet points from the candidate — never drop, remove, or reduce the number of bullets. " +
+  "2. Keep bullets detailed and full-length — do NOT shorten or summarize them. " +
+  "3. Rephrase bullets to naturally incorporate the JD's keywords and action verbs. " +
+  "4. Add quantified metrics where the candidate provided them. " +
+  "5. Do NOT invent employers, degrees, dates, or accomplishments. " +
+  "6. Include ALL experience entries and ALL matched projects — do not skip any. " +
+  "7. Do NOT worry about page length — the rendering system handles fitting to one page automatically. " +
+  "8. For skills, organize them into logical categories (e.g. 'Languages: Python, Java', 'Frameworks: React, Node'). DO NOT output the literal word 'Category:'. " +
+  "9. If the candidate provides certifications or achievements, include them.";
 
 /** Compact context object sent to the tailor agent (agent 3). */
 export function tailorContext(
@@ -56,6 +61,8 @@ export function tailorContext(
     },
     summary: profile.summary,
     skills: profile.skills,
+    certifications: profile.certifications,
+    achievements: profile.achievements,
     experience: profile.experience.map((e) => ({
       company: e.company,
       title: e.title,
@@ -68,6 +75,7 @@ export function tailorContext(
       school: e.school,
       degree: e.degree,
       year: e.year,
+      details: e.details,
     })),
   };
 
@@ -109,6 +117,34 @@ Candidate: ${args.candidateName}
 Strongest relevant points:\n- ${args.topPoints.join("\n- ")}
 
 Write the email subject and body. The resume will be attached as a PDF, so mention it briefly.`;
+}
+
+export const TWEAK_SYSTEM =
+  "You are an expert resume writer. You will receive an EXISTING tailored resume and a NEW job description analysis. " +
+  "Make MINIMAL changes to adapt the existing resume to the new JD. RULES: " +
+  "1. Keep ALL bullet points — never drop any. " +
+  "2. Only rephrase bullets slightly to incorporate the new JD's keywords. " +
+  "3. Reorder skills/bullets to prioritize what the new JD values most. " +
+  "4. Do NOT shorten any content. Do NOT remove any sections or entries. " +
+  "5. Keep the same structure, same employers, same dates. " +
+  "6. Update the summary to align with the new role. " +
+  "This should be a MINOR tweak, not a rewrite.";
+
+export function tweakContext(
+  analysis: JdAnalysis,
+  baseResume: any,
+  answers?: Record<string, string>
+): string {
+  return [
+    `NEW TARGET JOB ANALYSIS:\n${JSON.stringify(analysis)}`,
+    `EXISTING RESUME TO TWEAK:\n${JSON.stringify(baseResume)}`,
+    answers && Object.keys(answers).length
+      ? `USER NOTES FOR TWEAKING:\n${JSON.stringify(answers)}`
+      : "",
+    "Produce the tweaked resume now. Make minimal changes — only adjust keywords and ordering.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 export const TAILOR_LATEX_SYSTEM =

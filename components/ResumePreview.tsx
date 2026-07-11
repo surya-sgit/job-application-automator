@@ -1,101 +1,68 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import type { TailoredResume } from "@/lib/resumeSchema";
+import { renderResumeHtml, FIT_STEPS } from "@/templates/resume.html";
 
-/** On-screen preview of the tailored resume (mirrors the PDF template layout). */
+/** On-screen preview — renders the exact same HTML template used for the PDF. */
 export default function ResumePreview({ r }: { r: TailoredResume }) {
-  const contact = [r.contact.email, r.contact.phone, r.contact.location, ...(r.contact.links || [])]
-    .filter(Boolean)
-    .join("  •  ");
+  const [fitIndex, setFitIndex] = useState(0);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Reset fit index when resume changes
+  useEffect(() => {
+    setFitIndex(0);
+  }, [r]);
+
+  // Handle responsive scaling so the iframe is ALWAYS 794px wide internally
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setScale(entry.contentRect.width / 794);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const html = renderResumeHtml(r, FIT_STEPS[fitIndex]);
+
+  function handleIframeLoad() {
+    if (!iframeRef.current) return;
+    try {
+      const doc = iframeRef.current.contentWindow?.document;
+      if (!doc) return;
+      
+      // Wait for fonts to load before measuring height
+      doc.fonts.ready.then(() => {
+        const height = doc.body.scrollHeight;
+        if (height > 1123 && fitIndex < FIT_STEPS.length - 1) {
+          setFitIndex((prev) => prev + 1);
+        }
+      });
+    } catch (e) {
+      // ignore cross-origin errors if any
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-[720px] bg-white p-8 text-[13px] leading-relaxed text-slate-800 shadow-sm">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold tracking-tight">{r.name}</h1>
-        {r.title && <div className="font-semibold text-brand">{r.title}</div>}
-        <div className="text-xs text-slate-500">{contact}</div>
+    <div 
+      ref={containerRef} 
+      className="mx-auto w-full shadow-lg bg-white relative overflow-hidden" 
+      style={{ aspectRatio: "794/1123" }}
+    >
+      <div style={{ transform: `scale(${scale})`, transformOrigin: "top left", width: "794px", height: "1123px" }}>
+        <iframe
+          ref={iframeRef}
+          srcDoc={html}
+          onLoad={handleIframeLoad}
+          style={{ width: "794px", height: "1123px", border: "none" }}
+          title="Resume Preview"
+        />
       </div>
-
-      {r.summary && (
-        <Section title="Summary">
-          <p>{r.summary}</p>
-        </Section>
-      )}
-
-      {r.skills?.length > 0 && (
-        <Section title="Skills">
-          <div className="text-slate-600">{r.skills.join("  ·  ")}</div>
-        </Section>
-      )}
-
-      {r.experience?.length > 0 && (
-        <Section title="Experience">
-          {r.experience.map((e, i) => (
-            <div key={i} className="mb-2">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-bold">{e.title}</span>
-                {e.company && <span>— {e.company}</span>}
-                <span className="ml-auto text-xs text-slate-500">
-                  {[e.start, e.end].filter(Boolean).join(" – ")}
-                  {e.location ? ` · ${e.location}` : ""}
-                </span>
-              </div>
-              <Bullets items={e.bullets} />
-            </div>
-          ))}
-        </Section>
-      )}
-
-      {r.projects?.length > 0 && (
-        <Section title="Projects">
-          {r.projects.map((p, i) => (
-            <div key={i} className="mb-2">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-bold">{p.title}</span>
-                {p.stack?.length > 0 && (
-                  <span className="italic text-slate-500">{p.stack.join(", ")}</span>
-                )}
-                {p.link && <span className="ml-auto text-xs text-slate-500">{p.link}</span>}
-              </div>
-              <Bullets items={p.bullets} />
-            </div>
-          ))}
-        </Section>
-      )}
-
-      {r.education?.length > 0 && (
-        <Section title="Education">
-          {r.education.map((e, i) => (
-            <div key={i} className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-bold">{e.school}</span>
-              {e.degree && <span>— {e.degree}</span>}
-              <span className="ml-auto text-xs text-slate-500">{e.year}</span>
-            </div>
-          ))}
-        </Section>
-      )}
     </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-4">
-      <h2 className="mb-1 border-b border-slate-200 pb-0.5 text-xs font-semibold uppercase tracking-wide text-brand">
-        {title}
-      </h2>
-      {children}
-    </div>
-  );
-}
-
-function Bullets({ items }: { items: string[] }) {
-  if (!items?.length) return null;
-  return (
-    <ul className="mt-0.5 list-disc pl-5">
-      {items.map((b, i) => (
-        <li key={i}>{b}</li>
-      ))}
-    </ul>
   );
 }

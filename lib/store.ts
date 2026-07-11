@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { z } from 'zod';
 import { encrypt, decrypt } from "./crypto";
-import { Profile, ProfileSchema } from "./resumeSchema";
+import { Profile, ProfileSchema, TailoredResumeSchema } from "./resumeSchema";
 
 /**
  * Storage layer with two backends:
@@ -221,4 +222,45 @@ export function redactSecrets(s: Secrets) {
     },
     gmailAppPasswordSet: !!s.gmailAppPassword,
   };
+}
+
+// ---------- Saved Resumes ----------
+
+export interface SavedResume {
+  id: string;
+  label: string;
+  resume: z.infer<typeof TailoredResumeSchema>;
+  createdAt: string;
+  jdSnippet: string;
+}
+
+export async function readResumes(userId: string): Promise<SavedResume[]> {
+  try {
+    if (USE_DB) {
+      const raw = await kvGet(userId, "resumes");
+      if (!raw) return [];
+      return JSON.parse(raw) as SavedResume[];
+    }
+    const file = path.join(DATA_DIR, "resumes.json");
+    if (!fs.existsSync(file)) return [];
+    return JSON.parse(fs.readFileSync(file, "utf8")) as SavedResume[];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeResumes(userId: string, resumes: SavedResume[]): Promise<void> {
+  if (USE_DB) {
+    await kvSet(userId, "resumes", JSON.stringify(resumes));
+    return;
+  }
+  ensureDir();
+  const file = path.join(DATA_DIR, "resumes.json");
+  fs.writeFileSync(file, JSON.stringify(resumes, null, 2), "utf8");
+}
+
+export async function deleteResume(userId: string, resumeId: string): Promise<void> {
+  const resumes = await readResumes(userId);
+  const filtered = resumes.filter((r) => r.id !== resumeId);
+  await writeResumes(userId, filtered);
 }

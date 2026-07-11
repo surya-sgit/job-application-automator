@@ -12,6 +12,14 @@ interface Matched {
   matched: string[];
 }
 
+interface SavedResume {
+  id: string;
+  label: string;
+  resume: TailoredResume;
+  createdAt: string;
+  jdSnippet: string;
+}
+
 type Step = "input" | "review" | "questions" | "resume";
 
 const STEPS: { key: Step; label: string }[] = [
@@ -47,10 +55,24 @@ export default function TailorApp() {
   const [emailStage, setEmailStage] = useState<"compose" | "confirm">("compose");
   const [sendResult, setSendResult] = useState("");
 
+  // saved resumes
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [saveLabel, setSaveLabel] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
+  const [selectedBaseId, setSelectedBaseId] = useState<string>("");
+  const [showSaved, setShowSaved] = useState(false);
+
   // Best-effort empty-profile guard — never blocks the flow.
   useEffect(() => {
     fetchJson<{ projects: unknown[]; experience: unknown[] }>("/api/profile")
       .then((p) => setProfileEmpty(p.projects.length === 0 && p.experience.length === 0))
+      .catch(() => {});
+  }, []);
+
+  // Load saved resumes on mount
+  useEffect(() => {
+    fetchJson<{ resumes: SavedResume[] }>("/api/resumes")
+      .then((r) => setSavedResumes(r.resumes || []))
       .catch(() => {});
   }, []);
 
@@ -123,14 +145,24 @@ export default function TailorApp() {
   async function generateResume() {
     setError("");
     try {
-      setBusy("Writing your tailored resume…");
+      const baseResume = savedResumes.find((s) => s.id === selectedBaseId)?.resume;
+      const mode = useLatex ? "latex" : baseResume ? "tweak" : "json";
+
+      setBusy(
+        baseResume
+          ? "Tweaking existing resume for new JD…"
+          : "Writing your tailored resume…"
+      );
+
       const r = await post("/api/tailor", {
         action: "generate",
-        mode: useLatex ? "latex" : "json",
+        mode,
         analysis,
         projects: approvedProjects,
         answers,
+        ...(baseResume ? { baseResume } : {}),
       });
+
       if (r.latex) {
         setLatexOutput(r.latex);
         setResume(null);
@@ -202,6 +234,44 @@ export default function TailorApp() {
     }
   }
 
+  async function saveResume() {
+    if (!resume || !saveLabel.trim()) return;
+    setError("");
+    setSaveSuccess("");
+    try {
+      setBusy("Saving…");
+      const r = await post("/api/resumes", {
+        label: saveLabel.trim(),
+        resume,
+        jdSnippet: jd.slice(0, 100),
+      });
+      setSavedResumes((prev) => [r.saved, ...prev]);
+      setSaveSuccess(`✅ Saved as "${saveLabel.trim()}"`);
+      setSaveLabel("");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function deleteSavedResume(id: string) {
+    try {
+      await fetchJson(`/api/resumes/${id}`, { method: "DELETE" });
+      setSavedResumes((prev) => prev.filter((r) => r.id !== id));
+      if (selectedBaseId === id) setSelectedBaseId("");
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  function loadSavedResume(saved: SavedResume) {
+    setResume(saved.resume);
+    setLatexOutput("");
+    setStep("resume");
+    setShowSaved(false);
+  }
+
   function reset() {
     setStep("input");
     setAnalysis(null);
@@ -217,6 +287,9 @@ export default function TailorApp() {
     setBody("");
     setEmailStage("compose");
     setSendResult("");
+    setSaveSuccess("");
+    setSaveLabel("");
+    setSelectedBaseId("");
     setError("");
   }
 
@@ -237,7 +310,57 @@ export default function TailorApp() {
             {i < STEPS.length - 1 && <span className="text-slate-300">→</span>}
           </div>
         ))}
+
+        {/* Saved resumes toggle */}
+        {savedResumes.length > 0 && (
+          <button
+            className="ml-auto text-xs text-brand underline"
+            onClick={() => setShowSaved(!showSaved)}
+          >
+            📂 Saved Resumes ({savedResumes.length})
+          </button>
+        )}
       </div>
+
+      {/* Saved resumes panel */}
+      {showSaved && savedResumes.length > 0 && (
+        <div className="card space-y-3">
+          <h2 className="font-semibold">📂 Saved Resumes</h2>
+          <p className="text-sm text-slate-500">
+            Load a saved version to view/download, or select one as a base for tweaking.
+          </p>
+          {savedResumes.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2"
+            >
+              <div className="flex-1">
+                <span className="font-medium text-sm">{s.label}</span>
+                <span className="ml-2 text-xs text-slate-400">
+                  {new Date(s.createdAt).toLocaleDateString()}
+                </span>
+                {s.jdSnippet && (
+                  <p className="text-xs text-slate-400 truncate mt-0.5">
+                    {s.jdSnippet}…
+                  </p>
+                )}
+              </div>
+              <button
+                className="text-xs text-brand underline"
+                onClick={() => loadSavedResume(s)}
+              >
+                Load
+              </button>
+              <button
+                className="text-xs text-red-500 underline"
+                onClick={() => deleteSavedResume(s.id)}
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {busy && (
         <div className="rounded-lg bg-brand/10 px-4 py-2 text-sm text-brand-dark">{busy}</div>
@@ -366,13 +489,40 @@ export default function TailorApp() {
               />
             </div>
           ))}
+
+          {/* Tweak from existing resume */}
+          {savedResumes.length > 0 && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                🔄 Start from an existing resume (optional — saves tokens)
+              </label>
+              <select
+                className="input text-sm"
+                value={selectedBaseId}
+                onChange={(e) => setSelectedBaseId(e.target.value)}
+              >
+                <option value="">Generate fresh from profile</option>
+                {savedResumes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label} ({new Date(s.createdAt).toLocaleDateString()})
+                  </option>
+                ))}
+              </select>
+              {selectedBaseId && (
+                <p className="text-xs text-slate-500">
+                  The AI will make minor keyword tweaks to this resume instead of regenerating from scratch.
+                </p>
+              )}
+            </div>
+          )}
+
           <label className="flex items-center gap-2 text-sm text-slate-600 mt-4 mb-2">
             <input type="checkbox" checked={useLatex} onChange={(e) => setUseLatex(e.target.checked)} />
             Generate tailored LaTeX code instead of ATS PDF (requires LaTeX template in Profile)
           </label>
           <div className="flex flex-wrap gap-3">
             <button className="btn-primary" disabled={!!busy} onClick={generateResume}>
-              Generate tailored resume →
+              {selectedBaseId ? "Tweak resume →" : "Generate tailored resume →"}
             </button>
             <button className="btn-ghost" disabled={!!busy} onClick={() => setStep("review")}>
               ← Back
@@ -406,15 +556,35 @@ export default function TailorApp() {
             </div>
             <div className="max-h-[80vh] overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-4">
               {latexOutput ? (
-                <textarea 
-                  className="input min-h-[500px] w-full font-mono text-xs whitespace-pre" 
-                  value={latexOutput} 
-                  readOnly 
+                <textarea
+                  className="input min-h-[500px] w-full font-mono text-xs whitespace-pre"
+                  value={latexOutput}
+                  readOnly
                 />
               ) : (
                 <ResumePreview r={resume!} />
               )}
             </div>
+
+            {/* Save resume version */}
+            {resume && (
+              <div className="flex items-center gap-2">
+                <input
+                  className="input flex-1 text-sm"
+                  placeholder="Label (e.g., AI Engineer, Web Dev)"
+                  value={saveLabel}
+                  onChange={(e) => setSaveLabel(e.target.value)}
+                />
+                <button
+                  className="btn-ghost text-sm"
+                  disabled={!!busy || !saveLabel.trim()}
+                  onClick={saveResume}
+                >
+                  💾 Save version
+                </button>
+              </div>
+            )}
+            {saveSuccess && <p className="text-sm text-green-700">{saveSuccess}</p>}
           </div>
 
           <div className="space-y-4">
@@ -426,7 +596,7 @@ export default function TailorApp() {
                   Emailing via the app is only supported for ATS PDF resumes. You can copy your LaTeX code above and compile/send it yourself!
                 </div>
               )}
-              
+
               {!latexOutput && emailStage === "compose" && (
                 <>
                   <div>

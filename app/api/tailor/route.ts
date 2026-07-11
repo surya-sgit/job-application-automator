@@ -12,8 +12,10 @@ import {
 import {
   QUESTIONS_SYSTEM,
   TAILOR_SYSTEM,
+  TWEAK_SYSTEM,
   TAILOR_LATEX_SYSTEM,
   tailorContext,
+  tweakContext,
   tailorLatexContext,
 } from "@/lib/prompts";
 import { z } from "zod";
@@ -21,20 +23,19 @@ import { z } from "zod";
 export const runtime = "nodejs";
 
 /**
- * Agent 3 — resume tailor. Two actions:
- *   action="questions" -> 3-6 clarifying questions (cheap-ish, small output)
- *   action="generate"  -> the tailored resume JSON, using the user's answers
- *
- * Only the JD analysis + matched project subset + trimmed profile reach the
- * model — never the whole profile store.
+ * Agent 3 — resume tailor. Three modes:
+ *   action="questions" -> 3-6 clarifying questions
+ *   action="generate"  -> full tailored resume from profile + projects
+ *   action="generate" + mode="tweak" -> minimal tweak of an existing resume
  */
 
 const BodySchema = z.object({
   action: z.enum(["questions", "generate"]),
-  mode: z.enum(["json", "latex"]).default("json"),
+  mode: z.enum(["json", "latex", "tweak"]).default("json"),
   analysis: JdAnalysisSchema,
   projects: z.array(ProjectSchema).default([]),
   answers: z.record(z.string()).optional(),
+  baseResume: TailoredResumeSchema.optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -62,7 +63,18 @@ export async function POST(req: NextRequest) {
     }
 
     // action === "generate"
-    if (parsed.data.mode === "latex" && profile.latexTemplate) {
+    if (parsed.data.mode === "tweak" && parsed.data.baseResume) {
+      // Tweak mode: minor edits to an existing resume
+      const context = tweakContext(analysis, parsed.data.baseResume, answers);
+      const { object, usage } = await generateObject({
+        model: await getModel({ secrets }),
+        schema: TailoredResumeSchema,
+        system: TWEAK_SYSTEM,
+        prompt: context,
+      });
+      console.log(`[tailor:generate:tweak] ${describeConfig(secrets)} tokens=`, usage);
+      return NextResponse.json({ resume: object, usage });
+    } else if (parsed.data.mode === "latex" && profile.latexTemplate) {
       const context = tailorLatexContext(profile.latexTemplate, analysis, projects, answers);
       const { text, usage } = await generateText({
         model: await getModel({ secrets }),

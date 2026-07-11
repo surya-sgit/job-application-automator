@@ -13,6 +13,8 @@ const EMPTY: Profile = {
   links: [],
   summary: "",
   skills: [],
+  certifications: [],
+  achievements: [],
   projects: [],
   experience: [],
   education: [],
@@ -91,6 +93,8 @@ function mergeProfile(
       summary: pick(existing.summary, parsed.summary),
       links: dedupeStrings([...existing.links, ...parsed.links]),
       skills: dedupeStrings([...existing.skills, ...parsed.skills]),
+      certifications: dedupeStrings([...existing.certifications, ...parsed.certifications]),
+      achievements: dedupeStrings([...existing.achievements, ...parsed.achievements]),
       projects: [...existing.projects, ...newProjects],
       experience: [...existing.experience, ...newExperience],
       education: [...existing.education, ...newEducation],
@@ -512,7 +516,87 @@ export default function ProfilePage() {
                 onChange={(e) => updateEdu(edu.id, { year: e.target.value })}
               />
             </div>
+            <textarea
+              className="input min-h-[50px]"
+              placeholder="Details (e.g. CGPA, awards, minor)"
+              value={edu.details || ""}
+              onChange={(e) => updateEdu(edu.id, { details: e.target.value })}
+            />
             <button className="btn-ghost text-red-600" onClick={() => removeEdu(edu.id)}>
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Certifications */}
+      <div className="card space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Certifications ({p.certifications.length})</h2>
+          <button
+            className="btn-ghost"
+            onClick={() => set("certifications", [...p.certifications, ""])}
+          >
+            + Add certification
+          </button>
+        </div>
+        {p.certifications.map((cert, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              className="input flex-1"
+              placeholder="Certification title (e.g. AWS Certified Solutions Architect)"
+              value={cert}
+              onChange={(e) => {
+                const arr = [...p.certifications];
+                arr[i] = e.target.value;
+                set("certifications", arr);
+              }}
+            />
+            <button
+              className="btn-ghost text-red-600"
+              onClick={() => {
+                const arr = [...p.certifications];
+                arr.splice(i, 1);
+                set("certifications", arr);
+              }}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Achievements */}
+      <div className="card space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Achievements ({p.achievements.length})</h2>
+          <button
+            className="btn-ghost"
+            onClick={() => set("achievements", [...p.achievements, ""])}
+          >
+            + Add achievement
+          </button>
+        </div>
+        {p.achievements.map((ach, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              className="input flex-1"
+              placeholder="Achievement (e.g. 1st Place at National Hackathon)"
+              value={ach}
+              onChange={(e) => {
+                const arr = [...p.achievements];
+                arr[i] = e.target.value;
+                set("achievements", arr);
+              }}
+            />
+            <button
+              className="btn-ghost text-red-600"
+              onClick={() => {
+                const arr = [...p.achievements];
+                arr.splice(i, 1);
+                set("achievements", arr);
+              }}
+            >
               Remove
             </button>
           </div>

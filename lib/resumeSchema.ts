@@ -45,6 +45,8 @@ export const ProfileSchema = z.object({
   links: z.array(z.string()).default([]),
   summary: z.string().default(""),
   skills: z.array(z.string()).default([]),
+  certifications: z.array(z.string()).default([]),
+  achievements: z.array(z.string()).default([]),
   projects: z.array(ProjectSchema).default([]),
   experience: z.array(ExperienceSchema).default([]),
   education: z.array(EducationSchema).default([]),
@@ -91,6 +93,8 @@ export const ParsedProfileSchema = z.object({
   links: z.array(z.string()).default([]),
   summary: z.string().default(""),
   skills: z.array(z.string()).default([]),
+  certifications: z.array(z.string()).default([]),
+  achievements: z.array(z.string()).default([]),
   projects: z.array(ParsedProjectSchema).default([]),
   experience: z.array(ParsedExperienceSchema).default([]),
   education: z.array(ParsedEducationSchema).default([]),
@@ -113,6 +117,8 @@ export const TailoredResumeSchema = z.object({
   }),
   summary: z.string(),
   skills: z.array(z.string()).default([]),
+  certifications: z.array(z.string()).default([]),
+  achievements: z.array(z.string()).default([]),
   experience: z
     .array(
       z.object({
@@ -141,6 +147,7 @@ export const TailoredResumeSchema = z.object({
         school: z.string(),
         degree: z.string().optional().default(""),
         year: z.string().optional().default(""),
+        details: z.string().optional().default(""),
       })
     )
     .default([]),
