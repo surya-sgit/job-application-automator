@@ -11,7 +11,7 @@ export const ANALYZE_SYSTEM =
   "Return ONLY the requested fields. Be concise: short skill/keyword tokens, not sentences.";
 
 export function analyzeUser(jd: string): string {
-  return `Job description:\n"""\n${jd.slice(0, 3000)}\n"""\n\nExtract the job title, seniority, hard skills, soft skills, ATS keywords, and key responsibilities.`;
+  return `Job description:\n"""\n${jd.slice(0, 3000)}\n"""\n\nExtract the job title, seniority, hard skills, soft skills, ATS keywords, key responsibilities, and recruiterEmail (if any).`;
 }
 
 export const RESUME_PARSE_SYSTEM =
@@ -109,4 +109,38 @@ Candidate: ${args.candidateName}
 Strongest relevant points:\n- ${args.topPoints.join("\n- ")}
 
 Write the email subject and body. The resume will be attached as a PDF, so mention it briefly.`;
+}
+
+export const TAILOR_LATEX_SYSTEM =
+  "You are an expert resume writer and LaTeX specialist. You will be given a candidate's existing LaTeX resume, a job description analysis, their relevant projects, and answers to clarifying questions. " +
+  "Rewrite the LaTeX resume to tailor it to the target job. RULES: " +
+  "1. STRICTLY preserve all existing LaTeX commands, structure, preamble, and styling. " +
+  "2. Only modify the text content (e.g., bullet points, summary) and inject the matched projects into the appropriate section. " +
+  "3. Return ONLY the raw, compile-ready LaTeX code, with no markdown formatting blocks (e.g., do not wrap in ```latex).";
+
+export function tailorLatexContext(
+  latexTemplate: string,
+  analysis: JdAnalysis,
+  matchedProjects: Project[],
+  answers?: Record<string, string>
+): string {
+  const projects = matchedProjects.map((p) => ({
+    title: p.title,
+    stack: p.stack,
+    description: p.description,
+    bullets: p.bullets,
+    link: p.link,
+  }));
+
+  return [
+    `TARGET JOB ANALYSIS:\n${JSON.stringify(analysis)}`,
+    `MATCHED PROJECTS TO INJECT:\n${JSON.stringify(projects)}`,
+    answers && Object.keys(answers).length
+      ? `USER ANSWERS TO CLARIFYING QUESTIONS:\n${JSON.stringify(answers)}`
+      : "",
+    `EXISTING LATEX TEMPLATE:\n"""\n${latexTemplate}\n"""`,
+    "Produce the tailored LaTeX code now. Output ONLY valid LaTeX code.",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }

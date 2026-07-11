@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { getModel, MissingKeyError, describeConfig } from "@/lib/ai";
 import { readProfile, readSecrets } from "@/lib/store";
 import { requireUserId, UnauthorizedError } from "@/lib/session";
@@ -12,7 +12,9 @@ import {
 import {
   QUESTIONS_SYSTEM,
   TAILOR_SYSTEM,
+  TAILOR_LATEX_SYSTEM,
   tailorContext,
+  tailorLatexContext,
 } from "@/lib/prompts";
 import { z } from "zod";
 
@@ -29,6 +31,7 @@ export const runtime = "nodejs";
 
 const BodySchema = z.object({
   action: z.enum(["questions", "generate"]),
+  mode: z.enum(["json", "latex"]).default("json"),
   analysis: JdAnalysisSchema,
   projects: z.array(ProjectSchema).default([]),
   answers: z.record(z.string()).optional(),
@@ -45,9 +48,9 @@ export async function POST(req: NextRequest) {
     const userId = await requireUserId();
     const profile = await readProfile(userId);
     const secrets = await readSecrets(userId);
-    const context = tailorContext(analysis, profile, projects, answers);
 
     if (action === "questions") {
+      const context = tailorContext(analysis, profile, projects, answers);
       const { object, usage } = await generateObject({
         model: await getModel({ cheap: true, secrets }),
         schema: QuestionsSchema,
@@ -59,14 +62,26 @@ export async function POST(req: NextRequest) {
     }
 
     // action === "generate"
-    const { object, usage } = await generateObject({
-      model: await getModel({ secrets }),
-      schema: TailoredResumeSchema,
-      system: TAILOR_SYSTEM,
-      prompt: context,
-    });
-    console.log(`[tailor:generate] ${describeConfig(secrets)} tokens=`, usage);
-    return NextResponse.json({ resume: object, usage });
+    if (parsed.data.mode === "latex" && profile.latexTemplate) {
+      const context = tailorLatexContext(profile.latexTemplate, analysis, projects, answers);
+      const { text, usage } = await generateText({
+        model: await getModel({ secrets }),
+        system: TAILOR_LATEX_SYSTEM,
+        prompt: context,
+      });
+      console.log(`[tailor:generate:latex] ${describeConfig(secrets)} tokens=`, usage);
+      return NextResponse.json({ latex: text, usage });
+    } else {
+      const context = tailorContext(analysis, profile, projects, answers);
+      const { object, usage } = await generateObject({
+        model: await getModel({ secrets }),
+        schema: TailoredResumeSchema,
+        system: TAILOR_SYSTEM,
+        prompt: context,
+      });
+      console.log(`[tailor:generate:json] ${describeConfig(secrets)} tokens=`, usage);
+      return NextResponse.json({ resume: object, usage });
+    }
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Not signed in." }, { status: 401 });

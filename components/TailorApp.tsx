@@ -37,6 +37,8 @@ export default function TailorApp() {
   const [questions, setQuestions] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [resume, setResume] = useState<TailoredResume | null>(null);
+  const [useLatex, setUseLatex] = useState(false);
+  const [latexOutput, setLatexOutput] = useState("");
 
   // email panel
   const [to, setTo] = useState("");
@@ -68,6 +70,9 @@ export default function TailorApp() {
       setBusy("Analyzing job description…");
       const a = await post("/api/analyze", { jd });
       setAnalysis(a.analysis);
+      if (a.analysis.recruiterEmail) {
+        setTo(a.analysis.recruiterEmail);
+      }
 
       setBusy("Matching your projects (local, 0 tokens)…");
       const m = await post("/api/match", { analysis: a.analysis, topN: 4 });
@@ -121,11 +126,18 @@ export default function TailorApp() {
       setBusy("Writing your tailored resume…");
       const r = await post("/api/tailor", {
         action: "generate",
+        mode: useLatex ? "latex" : "json",
         analysis,
         projects: approvedProjects,
         answers,
       });
-      setResume(r.resume);
+      if (r.latex) {
+        setLatexOutput(r.latex);
+        setResume(null);
+      } else {
+        setResume(r.resume);
+        setLatexOutput("");
+      }
       setStep("resume");
     } catch (e) {
       setError((e as Error).message);
@@ -200,6 +212,7 @@ export default function TailorApp() {
     setQuestions([]);
     setAnswers({});
     setResume(null);
+    setLatexOutput("");
     setSubject("");
     setBody("");
     setEmailStage("compose");
@@ -353,6 +366,10 @@ export default function TailorApp() {
               />
             </div>
           ))}
+          <label className="flex items-center gap-2 text-sm text-slate-600 mt-4 mb-2">
+            <input type="checkbox" checked={useLatex} onChange={(e) => setUseLatex(e.target.checked)} />
+            Generate tailored LaTeX code instead of ATS PDF (requires LaTeX template in Profile)
+          </label>
           <div className="flex flex-wrap gap-3">
             <button className="btn-primary" disabled={!!busy} onClick={generateResume}>
               Generate tailored resume →
@@ -368,15 +385,17 @@ export default function TailorApp() {
       )}
 
       {/* STEP 4: resume + email */}
-      {step === "resume" && resume && (
+      {step === "resume" && (resume || latexOutput) && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Tailored resume</h2>
+              <h2 className="font-semibold">{latexOutput ? "Tailored LaTeX Code" : "Tailored Resume"}</h2>
               <div className="flex gap-2">
-                <button className="btn-primary" disabled={!!busy} onClick={downloadPdf}>
-                  ⬇ Download PDF
-                </button>
+                {resume && (
+                  <button className="btn-primary" disabled={!!busy} onClick={downloadPdf}>
+                    ⬇ Download PDF
+                  </button>
+                )}
                 <button className="btn-ghost" disabled={!!busy} onClick={() => setStep("questions")}>
                   ← Back
                 </button>
@@ -386,7 +405,15 @@ export default function TailorApp() {
               </div>
             </div>
             <div className="max-h-[80vh] overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-4">
-              <ResumePreview r={resume} />
+              {latexOutput ? (
+                <textarea 
+                  className="input min-h-[500px] w-full font-mono text-xs whitespace-pre" 
+                  value={latexOutput} 
+                  readOnly 
+                />
+              ) : (
+                <ResumePreview r={resume!} />
+              )}
             </div>
           </div>
 
@@ -394,7 +421,13 @@ export default function TailorApp() {
             <div className="card space-y-4">
               <h2 className="font-semibold">Email to HR</h2>
 
-              {emailStage === "compose" && (
+              {latexOutput && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+                  Emailing via the app is only supported for ATS PDF resumes. You can copy your LaTeX code above and compile/send it yourself!
+                </div>
+              )}
+              
+              {!latexOutput && emailStage === "compose" && (
                 <>
                   <div>
                     <label className="label">Recipient (HR / company email)</label>
@@ -435,7 +468,7 @@ export default function TailorApp() {
                 </>
               )}
 
-              {emailStage === "confirm" && (
+              {!latexOutput && emailStage === "confirm" && (
                 <>
                   <p className="text-sm text-slate-500">
                     Double-check before sending — this goes straight to HR with your resume PDF
@@ -446,7 +479,7 @@ export default function TailorApp() {
                     <p><span className="font-medium">Subject:</span> {subject}</p>
                     <p className="whitespace-pre-wrap border-t border-slate-200 pt-2">{body}</p>
                     <p className="text-xs text-slate-400">
-                      📎 {(resume.name || "resume").replace(/[^a-z0-9]+/gi, "_")}_resume.pdf
+                      📎 {(resume?.name || "resume").replace(/[^a-z0-9]+/gi, "_")}_resume.pdf
                     </p>
                   </div>
                   <div className="flex gap-3">

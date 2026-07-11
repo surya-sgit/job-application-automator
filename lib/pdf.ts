@@ -27,10 +27,22 @@ async function launchBrowser(): Promise<Browser> {
     });
   }
   const puppeteer = (await import("puppeteer")).default;
-  return puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  }) as unknown as Browser;
+  try {
+    return (await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    })) as unknown as Browser;
+  } catch (e: any) {
+    if (process.platform === "darwin" && e.message && (e.message.includes("-88") || e.message.includes("ENOENT"))) {
+      console.warn("Falling back to system Chrome due to puppeteer launch error:", e.message);
+      return (await puppeteer.launch({
+        headless: true,
+        executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      })) as unknown as Browser;
+    }
+    throw e;
+  }
 }
 
 /**

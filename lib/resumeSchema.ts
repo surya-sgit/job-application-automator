@@ -48,6 +48,7 @@ export const ProfileSchema = z.object({
   projects: z.array(ProjectSchema).default([]),
   experience: z.array(ExperienceSchema).default([]),
   education: z.array(EducationSchema).default([]),
+  latexTemplate: z.string().default(""),
 });
 export type Profile = z.infer<typeof ProfileSchema>;
 
@@ -93,6 +94,7 @@ export const ParsedProfileSchema = z.object({
   projects: z.array(ParsedProjectSchema).default([]),
   experience: z.array(ParsedExperienceSchema).default([]),
   education: z.array(ParsedEducationSchema).default([]),
+  latexTemplate: z.string().default(""),
 });
 export type ParsedProfile = z.infer<typeof ParsedProfileSchema>;
 
@@ -153,6 +155,7 @@ export const JdAnalysisSchema = z.object({
   softSkills: z.array(z.string()).default([]),
   keywords: z.array(z.string()).default([]),
   responsibilities: z.array(z.string()).default([]),
+  recruiterEmail: z.string().default(""),
 });
 export type JdAnalysis = z.infer<typeof JdAnalysisSchema>;
 

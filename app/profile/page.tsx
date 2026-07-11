@@ -16,6 +16,7 @@ const EMPTY: Profile = {
   projects: [],
   experience: [],
   education: [],
+  latexTemplate: "",
 };
 
 function uid() {
@@ -93,6 +94,7 @@ function mergeProfile(
       projects: [...existing.projects, ...newProjects],
       experience: [...existing.experience, ...newExperience],
       education: [...existing.education, ...newEducation],
+      latexTemplate: pick(existing.latexTemplate, parsed.latexTemplate),
     },
     summary: {
       projects: newProjects.length,
@@ -515,6 +517,22 @@ export default function ProfilePage() {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* LaTeX Template */}
+      <div className="card space-y-4">
+        <div>
+          <h2 className="font-semibold">LaTeX Template (Optional)</h2>
+          <p className="text-sm text-slate-500">
+            Paste your raw `.tex` resume code here. If provided, you can choose to generate a tailored LaTeX file instead of the standard PDF.
+          </p>
+        </div>
+        <textarea
+          className="input min-h-[300px] font-mono text-xs whitespace-pre"
+          value={p.latexTemplate}
+          onChange={(e) => set("latexTemplate", e.target.value)}
+          placeholder="\documentclass{article}&#10;\begin{document}&#10;..."
+        />
       </div>
 
       <div className="sticky bottom-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur">
