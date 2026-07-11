@@ -41,7 +41,8 @@ export const TAILOR_SYSTEM =
   "6. Include ALL experience entries and ALL matched projects — do not skip any. " +
   "7. Do NOT worry about page length — the rendering system handles fitting to one page automatically. " +
   "8. For skills, organize them into logical categories (e.g. 'Languages: Python, Java', 'Frameworks: React, Node'). DO NOT output the literal word 'Category:'. " +
-  "9. If the candidate provides certifications or achievements, include them.";
+  "9. If the candidate provides certifications or achievements, include them. " +
+  "10. **BOLD** key skills, metrics, and technologies in the bullet points using markdown (e.g. **React**).";
 
 /** Compact context object sent to the tailor agent (agent 3). */
 export function tailorContext(

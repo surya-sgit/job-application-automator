@@ -13,6 +13,8 @@ export interface FitVars {
   basePx: number;     // body font-size in px (user's original: 14)
   h1Px: number;       // name heading in px (user's original: 38)
   h2Px: number;       // section heading in px (user's original: 24)
+  h2Pb: number;       // section heading padding-bottom in px (user's original: 6)
+  h2Mb: number;       // section heading margin-bottom in px (user's original: 16)
   h3Px: number;       // item heading in px (user's original: 18)
   sectionMt: number;  // section margin-top in px (user's original: 28)
   articleMb: number;  // article margin-bottom in px (user's original: 22)
@@ -23,30 +25,32 @@ export interface FitVars {
 
 export const FIT_STEPS: FitVars[] = [
   // Step 0: User's EXACT original values
-  { basePx: 14, h1Px: 38, h2Px: 24, h3Px: 18, sectionMt: 28, articleMb: 22, liMb: 8, headerMb: 30, padding: 50 },
+  { basePx: 14, h1Px: 38, h2Px: 24, h2Pb: 6, h2Mb: 16, h3Px: 18, sectionMt: 28, articleMb: 22, liMb: 8, headerMb: 30, padding: 50 },
   // Step 1: Slightly tighter
-  { basePx: 13.5, h1Px: 36, h2Px: 22, h3Px: 17, sectionMt: 24, articleMb: 18, liMb: 7, headerMb: 26, padding: 45 },
+  { basePx: 13.5, h1Px: 36, h2Px: 22, h2Pb: 5, h2Mb: 14, h3Px: 17, sectionMt: 24, articleMb: 18, liMb: 7, headerMb: 26, padding: 45 },
   // Step 2: Compact
-  { basePx: 13, h1Px: 34, h2Px: 21, h3Px: 16, sectionMt: 20, articleMb: 16, liMb: 6, headerMb: 22, padding: 40 },
+  { basePx: 13, h1Px: 34, h2Px: 21, h2Pb: 4, h2Mb: 12, h3Px: 16, sectionMt: 20, articleMb: 16, liMb: 6, headerMb: 22, padding: 40 },
   // Step 3: Tight
-  { basePx: 12.5, h1Px: 32, h2Px: 20, h3Px: 15.5, sectionMt: 18, articleMb: 14, liMb: 5, headerMb: 20, padding: 36 },
+  { basePx: 12.5, h1Px: 32, h2Px: 20, h2Pb: 3, h2Mb: 10, h3Px: 15.5, sectionMt: 18, articleMb: 14, liMb: 5, headerMb: 20, padding: 36 },
   // Step 4: Very tight
-  { basePx: 12, h1Px: 30, h2Px: 19, h3Px: 15, sectionMt: 16, articleMb: 12, liMb: 4, headerMb: 18, padding: 32 },
+  { basePx: 12, h1Px: 30, h2Px: 19, h2Pb: 2, h2Mb: 8, h3Px: 15, sectionMt: 16, articleMb: 12, liMb: 4, headerMb: 18, padding: 32 },
   // Step 5: Minimum
-  { basePx: 11.5, h1Px: 28, h2Px: 18, h3Px: 14.5, sectionMt: 14, articleMb: 10, liMb: 3, headerMb: 16, padding: 28 },
+  { basePx: 11.5, h1Px: 28, h2Px: 18, h2Pb: 1, h2Mb: 6, h3Px: 14.5, sectionMt: 14, articleMb: 10, liMb: 3, headerMb: 16, padding: 28 },
   // Step 6: Micro
-  { basePx: 11, h1Px: 26, h2Px: 17, h3Px: 14, sectionMt: 12, articleMb: 8, liMb: 2, headerMb: 14, padding: 24 },
+  { basePx: 11, h1Px: 26, h2Px: 17, h2Pb: 0, h2Mb: 4, h3Px: 14, sectionMt: 12, articleMb: 8, liMb: 2, headerMb: 14, padding: 24 },
   // Step 7: Nano
-  { basePx: 10.5, h1Px: 24, h2Px: 16, h3Px: 13.5, sectionMt: 10, articleMb: 6, liMb: 1, headerMb: 12, padding: 20 },
+  { basePx: 10.5, h1Px: 24, h2Px: 16, h2Pb: 0, h2Mb: 3, h3Px: 13.5, sectionMt: 10, articleMb: 6, liMb: 1, headerMb: 12, padding: 20 },
   // Step 8: Pico
-  { basePx: 9.5, h1Px: 22, h2Px: 15, h3Px: 13, sectionMt: 8, articleMb: 4, liMb: 0, headerMb: 10, padding: 16 },
+  { basePx: 9.5, h1Px: 22, h2Px: 15, h2Pb: 0, h2Mb: 2, h3Px: 13, sectionMt: 8, articleMb: 4, liMb: 0, headerMb: 10, padding: 16 },
 ];
 
 function esc(s: string): string {
   return (s || "")
     .replace(/&/g, "&amp;")
     .replace(/</, "&lt;")
-    .replace(/>/, "&gt;");
+    .replace(/>/, "&gt;")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>");
 }
 
 function parseSkills(skillsList: string[]): string {
@@ -215,8 +219,8 @@ ${bullets(p.bullets)}
         section h2 {
             font-size: ${fit.h2Px}px;
             border-bottom: 2px solid #222;
-            padding-bottom: 6px;
-            margin-bottom: 16px;
+            padding-bottom: ${fit.h2Pb}px;
+            margin-bottom: ${fit.h2Mb}px;
         }
         .heading {
             display: grid;
