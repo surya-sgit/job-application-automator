@@ -120,7 +120,7 @@ export const EMAIL_SYSTEM =
   "Formatting:\n" +
   "- Use proper paragraph spacing.\n" +
   "- Keep the email strictly under 100 words.\n" +
-  "- Do not include a signature block (e.g. 'Best regards, [Name]'). The UI will append it automatically.\n" +
+  "- Do not include ANY sign-offs or closing phrases (e.g., do not write 'Sincerely,', 'Best regards,', or your name). The UI will append the full signature block automatically.\n" +
   "- Make it ATS- and recruiter-friendly.\n" +
   "- Dynamically personalize the email based on the job title, company name, and relevant resume content instead of using the same generic text for every application.";
 

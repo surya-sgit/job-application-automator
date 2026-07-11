@@ -147,8 +147,11 @@ export interface Secrets {
     groq?: string;
   };
   ollamaBaseUrl?: string;
+  emailProvider?: "gmail" | "outlook";
   gmailUser?: string;
   gmailAppPassword?: string;
+  outlookUser?: string;
+  outlookAppPassword?: string;
 }
 
 const DEFAULT_SECRETS: Secrets = {

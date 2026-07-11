@@ -35,22 +35,36 @@ export async function POST(req: NextRequest) {
   try {
     const userId = await requireUserId();
     const secrets = await readSecrets(userId);
-    if (!secrets.gmailUser || !secrets.gmailAppPassword) {
-      return NextResponse.json(
-        { error: "Gmail is not configured. Add your Gmail address + App Password in Settings." },
-        { status: 400 }
-      );
-    }
-
     const pdf = await renderResumePdf(resume);
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: secrets.gmailUser, pass: secrets.gmailAppPassword },
-    });
+    let transporter;
+    const provider = secrets.emailProvider || "gmail";
+    let fromEmail = "";
+
+    if (provider === "outlook") {
+      if (!secrets.outlookUser || !secrets.outlookAppPassword) {
+        return NextResponse.json({ error: "Outlook is not configured. Add your Outlook address + App Password in Settings." }, { status: 400 });
+      }
+      fromEmail = secrets.outlookUser;
+      transporter = nodemailer.createTransport({
+        host: "smtp-mail.outlook.com",
+        port: 587,
+        secure: false, // TLS
+        auth: { user: secrets.outlookUser, pass: secrets.outlookAppPassword },
+      });
+    } else {
+      if (!secrets.gmailUser || !secrets.gmailAppPassword) {
+        return NextResponse.json({ error: "Gmail is not configured. Add your Gmail address + App Password in Settings." }, { status: 400 });
+      }
+      fromEmail = secrets.gmailUser;
+      transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: secrets.gmailUser, pass: secrets.gmailAppPassword },
+      });
+    }
 
     const info = await transporter.sendMail({
-      from: secrets.gmailUser,
+      from: fromEmail,
       to,
       cc,
       subject,
