@@ -21,6 +21,7 @@ import {
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 /**
  * Agent 3 — resume tailor. Three modes:

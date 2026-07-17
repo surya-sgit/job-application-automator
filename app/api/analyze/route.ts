@@ -7,6 +7,7 @@ import { JdAnalysisSchema } from "@/lib/resumeSchema";
 import { ANALYSIS_SYSTEM, analyzeUser } from "@/lib/prompts";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 /** Agent 1 — JD analyzer. Uses the cheap model. Small in, small out. */
 export async function POST(req: NextRequest) {

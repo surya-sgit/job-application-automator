@@ -8,6 +8,7 @@ import { EMAIL_SYSTEM, emailUser } from "@/lib/prompts";
 import { z } from "zod";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const BodySchema = z.object({
   analysis: JdAnalysisSchema,
