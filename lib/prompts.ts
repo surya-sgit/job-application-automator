@@ -150,7 +150,8 @@ export const TWEAK_SYSTEM =
   "5. Do NOT shorten any content. Do NOT remove any sections or entries. " +
   "6. Keep the same structure, employers, and core accomplishments intact. " +
   "7. Update the summary to align with the new role, but keep it grounded in reality. " +
-  "8. STRICT RULE FOR SKILLS: Do NOT use ANY bolding or markdown formatting in the 'skills' section whatsoever. " +
+  "8. **BOLD** key skills, metrics, and technologies in the bullet points using markdown (e.g. **React**). Do NOT bold entire sentences. " +
+  "9. STRICT RULE FOR SKILLS: Do NOT use ANY bolding or markdown formatting in the 'skills' section whatsoever. " +
   "This should be a MINOR tweak, not a rewrite.";
 
 export function tweakContext(
