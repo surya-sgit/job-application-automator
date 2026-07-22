@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check } from "lucide-react";
 import ResumePreview from "@/components/ResumePreview";
 import ResumeEditor from "@/components/ResumeEditor";
 import { fetchJson } from "@/lib/clientFetch";
@@ -337,22 +339,53 @@ export default function TailorApp() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Step indicator */}
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        {STEPS.map((s, i) => (
-          <div key={s.key} className="flex items-center gap-2">
-            <span
-              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                step === s.key ? "bg-brand text-white" : "bg-slate-200 text-slate-500"
-              }`}
-            >
-              {i + 1}
-            </span>
-            <span className={step === s.key ? "font-medium" : "text-slate-400"}>{s.label}</span>
-            {i < STEPS.length - 1 && <span className="text-slate-300">→</span>}
-          </div>
-        ))}
+    <div className="space-y-8">
+      {/* Animated Step Indicator */}
+      <div className="card mb-8 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-sm relative">
+          <div className="absolute left-0 top-1/2 -z-10 h-0.5 w-full -translate-y-1/2 bg-white/5"></div>
+          {STEPS.map((s, i) => {
+            const isActive = step === s.key;
+            const isPast = STEPS.findIndex(x => x.key === step) > i;
+            
+            return (
+              <div key={s.key} className="flex flex-col items-center gap-2 relative z-10 bg-dark-800/80 px-2 rounded-lg">
+                <motion.div
+                  initial={false}
+                  animate={{
+                    backgroundColor: isActive ? "#6366f1" : isPast ? "#10b981" : "rgba(255,255,255,0.05)",
+                    scale: isActive ? 1.1 : 1,
+                    borderColor: isActive ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.1)",
+                  }}
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-xs font-bold shadow-lg transition-colors ${
+                    isActive || isPast ? "text-white" : "text-slate-400"
+                  }`}
+                >
+                  {isPast ? <Check size={14} className="text-white" /> : i + 1}
+                </motion.div>
+                <span className={`text-xs font-medium transition-colors ${isActive ? "text-white" : "text-slate-500"}`}>
+                  {s.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={step}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          {error && (
+            <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 backdrop-blur-md flex items-center gap-3">
+              <span className="text-xl">⚠️</span> {error}
+            </div>
+          )}
 
         {/* Saved resumes toggle */}
         {savedResumes.length > 0 && (
@@ -814,6 +847,25 @@ export default function TailorApp() {
           </div>
         </div>
       )}
+      </motion.div>
+      </AnimatePresence>
+
+      {/* Busy Overlay Loader */}
+      <AnimatePresence>
+        {busy && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-dark-900/80 backdrop-blur-sm"
+          >
+            <div className="flex flex-col items-center gap-4 card w-72 text-center border-brand-500/30">
+              <div className="h-10 w-10 animate-spin-slow rounded-full border-2 border-brand-500 border-t-transparent shadow-[0_0_15px_rgba(79,70,229,0.5)]"></div>
+              <p className="animate-pulse font-medium text-white">{busy}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -17,6 +17,8 @@
     "@sparticuz/chromium": "^123.0.1",
     "ai": "^3.4.0",
     "bcryptjs": "^3.0.3",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
     "jose": "^6.2.3",
     "lucide-react": "^1.25.0",
     "mammoth": "^1.12.0",
@@ -28,6 +30,7 @@
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-textarea-autosize": "^8.5.9",
+    "tailwind-merge": "^3.6.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const STEPS = [
   {
@@ -53,9 +55,14 @@ const FEATURES = [
 
 export default function LandingPage() {
   return (
-    <div className="space-y-20 pb-16">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="space-y-24 py-12"
+    >
       {/* Hero */}
-      <section className="pt-16 text-center sm:pt-24">
+      <section className="text-center">
         <p className="mb-4 text-5xl">🎯</p>
         <h1 className="mx-auto max-w-3xl text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           Paste a job description. Get a tailored resume. Email it — in minutes.
@@ -122,6 +129,6 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-    </div>
+    </motion.div>
   );
 }

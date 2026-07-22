@@ -3,33 +3,72 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
-  @apply bg-slate-50 text-slate-800;
+  @apply bg-dark-900 text-slate-300 antialiased min-h-screen bg-mesh-dark bg-no-repeat bg-cover bg-fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-display text-white tracking-tight;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all duration-200 
+    disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-[1px] active:scale-[0.98];
   }
+  
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark;
+    @apply btn bg-brand-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:bg-brand-500 hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] border border-brand-500/50;
   }
+  
   .btn-ghost {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
+    @apply btn border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white backdrop-blur-md;
   }
+
+  .btn-danger {
+    @apply btn border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 backdrop-blur-md;
+  }
+
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply w-full rounded-xl border border-white/10 bg-dark-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition-all duration-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:bg-dark-800 backdrop-blur-md;
   }
+  
   .label {
-    @apply mb-1 block text-sm font-medium text-slate-700;
+    @apply mb-1.5 block text-sm font-medium text-slate-400;
   }
+  
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-2xl border border-white/10 bg-dark-800/40 p-6 shadow-2xl backdrop-blur-xl transition-all duration-300;
   }
+  
   .chip {
-    @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600;
+    @apply inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300 backdrop-blur-md;
   }
+  
+  .chip-success {
+    @apply inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400 backdrop-blur-md;
+  }
+
+  .glass-panel {
+    @apply rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-md;
+  }
+}
+
+/* Custom Scrollbar for dark mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2); 
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2); 
 }
