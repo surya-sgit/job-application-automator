@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { TailoredResume, ParsedProfile } from "@/lib/resumeSchema";
 import TextareaAutosize from "react-textarea-autosize";
-import { Lock, Sparkles, Undo2, ChevronDown, ChevronUp } from "lucide-react";
+import { Lock, Sparkles, Undo2, ChevronDown, ChevronUp, Eye, Edit2 } from "lucide-react";
+import DiffViewer from "./DiffViewer";
 
 interface Props {
   draftResume: TailoredResume;
@@ -14,6 +15,7 @@ interface Props {
 
 export default function ResumeEditor({ draftResume, originalResume, onSave, onCancel }: Props) {
   const [edited, setEdited] = useState<TailoredResume>(JSON.parse(JSON.stringify(draftResume)));
+  const [viewMode, setViewMode] = useState<"diff" | "edit">("diff");
   
   // Accordion state
   const [expandedRoles, setExpandedRoles] = useState<Set<number>>(new Set(edited.experience.map((_, i) => i)));
@@ -82,12 +84,38 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
         </div>
 
         {/* Column Headers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 hidden md:grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 hidden md:grid items-center">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-400 uppercase tracking-wider pl-1">
             <Lock className="w-4 h-4" /> Original Profile
           </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-brand uppercase tracking-wider pl-1">
-            <Sparkles className="w-4 h-4" /> AI Draft Editor
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand uppercase tracking-wider pl-1">
+              <Sparkles className="w-4 h-4" /> AI Draft
+            </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex bg-slate-100 rounded-lg p-1 border border-slate-200">
+              <button
+                onClick={() => setViewMode("diff")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  viewMode === "diff" 
+                    ? "bg-white text-brand-600 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" /> Diff
+              </button>
+              <button
+                onClick={() => setViewMode("edit")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  viewMode === "edit" 
+                    ? "bg-white text-brand-600 shadow-sm" 
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit
+              </button>
+            </div>
           </div>
         </div>
 
@@ -102,7 +130,7 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
             
             {/* Editable Right */}
             <div className="relative group">
-              {originalResume?.summary && originalResume.summary !== edited.summary && (
+              {originalResume?.summary && originalResume.summary !== edited.summary && viewMode === "edit" && (
                 <div className="absolute -top-3 right-3 flex items-center gap-2 z-10">
                   <button 
                     onClick={revertSummary}
@@ -116,16 +144,22 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                   </div>
                 </div>
               )}
-              <TextareaAutosize
-                minRows={3}
-                className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
-                  originalResume?.summary && originalResume.summary !== edited.summary
-                    ? "border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20"
-                    : "bg-white"
-                }`}
-                value={edited.summary}
-                onChange={(e) => setEdited({ ...edited, summary: e.target.value })}
-              />
+              {viewMode === "diff" ? (
+                <div className="w-full text-sm leading-relaxed p-4 rounded-xl border border-indigo-200 bg-white ring-4 ring-indigo-50/50">
+                  <DiffViewer original={originalResume?.summary || ""} modified={edited.summary} />
+                </div>
+              ) : (
+                <TextareaAutosize
+                  minRows={3}
+                  className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
+                    originalResume?.summary && originalResume.summary !== edited.summary
+                      ? "border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20"
+                      : "bg-white"
+                  }`}
+                  value={edited.summary}
+                  onChange={(e) => setEdited({ ...edited, summary: e.target.value })}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -139,7 +173,7 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
             </div>
             
             <div className="relative group">
-              {originalResume?.skills && originalResume.skills.join(", ") !== edited.skills.join(", ") && (
+              {originalResume?.skills && originalResume.skills.join(", ") !== edited.skills.join(", ") && viewMode === "edit" && (
                 <div className="absolute -top-3 right-3 flex items-center gap-2 z-10">
                   <button 
                     onClick={revertSkills}
@@ -153,16 +187,22 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                   </div>
                 </div>
               )}
-              <TextareaAutosize
-                minRows={2}
-                className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
-                  originalResume?.skills && originalResume.skills.join(", ") !== edited.skills.join(", ")
-                    ? "border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20"
-                    : "bg-white"
-                }`}
-                value={edited.skills.join(", ")}
-                onChange={(e) => setEdited({ ...edited, skills: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
-              />
+              {viewMode === "diff" ? (
+                <div className="w-full text-sm leading-relaxed p-4 rounded-xl border border-indigo-200 bg-white ring-4 ring-indigo-50/50">
+                  <DiffViewer original={originalResume?.skills.join(", ") || ""} modified={edited.skills.join(", ")} />
+                </div>
+              ) : (
+                <TextareaAutosize
+                  minRows={2}
+                  className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
+                    originalResume?.skills && originalResume.skills.join(", ") !== edited.skills.join(", ")
+                      ? "border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20"
+                      : "bg-white"
+                  }`}
+                  value={edited.skills.join(", ")}
+                  onChange={(e) => setEdited({ ...edited, skills: e.target.value.split(",").map(s => s.trim()) })}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -209,7 +249,7 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                             
                             {/* Right: Editable */}
                             <div className="relative">
-                              {isModified && (
+                              {isModified && viewMode === "edit" && (
                                 <div className="absolute -top-3 right-3 flex items-center gap-2 z-10">
                                   <button 
                                     onClick={() => revertExpBullet(expIndex, bIndex, originalBullet)}
@@ -223,20 +263,26 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                                   </div>
                                 </div>
                               )}
-                              <TextareaAutosize
-                                minRows={2}
-                                className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
-                                  isModified 
-                                    ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20' 
-                                    : 'bg-white hover:border-slate-300'
-                                }`}
-                                value={bullet}
-                                onChange={(e) => {
-                                  const newExp = [...edited.experience];
-                                  newExp[expIndex].bullets[bIndex] = e.target.value;
-                                  setEdited({ ...edited, experience: newExp });
-                                }}
-                              />
+                              {viewMode === "diff" ? (
+                                <div className={`w-full text-sm leading-relaxed p-4 rounded-xl border ${isModified ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50' : 'border-transparent bg-white/50'}`}>
+                                  <DiffViewer original={originalBullet || ""} modified={bullet} />
+                                </div>
+                              ) : (
+                                <TextareaAutosize
+                                  minRows={2}
+                                  className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
+                                    isModified 
+                                      ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20' 
+                                      : 'bg-white hover:border-slate-300'
+                                  }`}
+                                  value={bullet}
+                                  onChange={(e) => {
+                                    const newExp = [...edited.experience];
+                                    newExp[expIndex].bullets[bIndex] = e.target.value;
+                                    setEdited({ ...edited, experience: newExp });
+                                  }}
+                                />
+                              )}
                             </div>
                           </div>
                         );
@@ -288,7 +334,7 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                             
                             {/* Right: Editable */}
                             <div className="relative">
-                              {isModified && (
+                              {isModified && viewMode === "edit" && (
                                 <div className="absolute -top-3 right-3 flex items-center gap-2 z-10">
                                   <button 
                                     onClick={() => revertProjBullet(projIndex, bIndex, originalBullet)}
@@ -302,20 +348,26 @@ export default function ResumeEditor({ draftResume, originalResume, onSave, onCa
                                   </div>
                                 </div>
                               )}
-                              <TextareaAutosize
-                                minRows={2}
-                                className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
-                                  isModified 
-                                    ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20' 
-                                    : 'bg-white hover:border-slate-300'
-                                }`}
-                                value={bullet}
-                                onChange={(e) => {
-                                  const newProj = [...edited.projects];
-                                  newProj[projIndex].bullets[bIndex] = e.target.value;
-                                  setEdited({ ...edited, projects: newProj });
-                                }}
-                              />
+                              {viewMode === "diff" ? (
+                                <div className={`w-full text-sm leading-relaxed p-4 rounded-xl border ${isModified ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50' : 'border-transparent bg-white/50'}`}>
+                                  <DiffViewer original={originalBullet || ""} modified={bullet} />
+                                </div>
+                              ) : (
+                                <TextareaAutosize
+                                  minRows={2}
+                                  className={`input w-full text-sm leading-relaxed p-4 rounded-xl resize-none transition-shadow ${
+                                    isModified 
+                                      ? 'border-indigo-200 bg-white ring-4 ring-indigo-50/50 focus:border-brand focus:ring-brand/20' 
+                                      : 'bg-white hover:border-slate-300'
+                                  }`}
+                                  value={bullet}
+                                  onChange={(e) => {
+                                    const newProj = [...edited.projects];
+                                    newProj[projIndex].bullets[bIndex] = e.target.value;
+                                    setEdited({ ...edited, projects: newProj });
+                                  }}
+                                />
+                              )}
                             </div>
                           </div>
                         );
